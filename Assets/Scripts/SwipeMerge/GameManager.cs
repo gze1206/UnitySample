@@ -1,0 +1,48 @@
+﻿using UnityEngine;
+using static SwipeMerge.Constants;
+
+namespace SwipeMerge
+{
+    public partial class GameManager
+    {
+        [SerializeField] private GameObject gameOverPanel;
+
+        private bool isPlaying;
+        
+        private void Awake()
+        {
+            Initialize();
+        }
+
+        private void Update()
+        {
+            this.UpdateInput();
+        }
+        
+        public void Initialize()
+        {
+            this.gameOverPanel.SetActive(false);
+            this.isPlaying = true;
+            
+            for (var i = 0; i < CellPerLine * CellPerLine; i++)
+            {
+                if (!this.tiles[i]) continue;
+                Destroy(this.tiles[i].gameObject);
+                this.tiles[i] = null;
+            }
+            
+            for (var i = 0; i < this.spawnOnInit; i++)
+            {
+                this.Spawn();
+            }
+        }
+
+        public void Exit()
+        {
+            Application.Quit();
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+        }
+    }
+}
