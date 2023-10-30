@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+
 using static SwipeMerge.Constants;
 
 namespace SwipeMerge
@@ -16,6 +17,11 @@ namespace SwipeMerge
 
         private void Update()
         {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                this.Exit();
+            }
+            
             this.UpdateInput();
         }
         

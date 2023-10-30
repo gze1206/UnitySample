@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -25,40 +26,46 @@ namespace SwipeMerge
         {
             if (!this.isPlaying) return;
 
+            var hasShiftTried = false;
             this.shiftedTiles = 0;
             
-            if (Input.GetKeyDown(KeyCode.LeftArrow))
+            if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
             {
                 this.ShiftAll();
                 this.UpdatePosition();
+                hasShiftTried = true;
             }
-            else if (Input.GetKeyDown(KeyCode.RightArrow))
+            else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
             {
                 this.Rotate(2);
                 this.ShiftAll();
                 this.Rotate(2);
                 this.UpdatePosition();
+                hasShiftTried = true;
             }
-            else if (Input.GetKeyDown(KeyCode.UpArrow))
+            else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
             {
                 this.Rotate(1);
                 this.ShiftAll();
                 this.Rotate(3);
                 this.UpdatePosition();
+                hasShiftTried = true;
             }
-            else if (Input.GetKeyDown(KeyCode.DownArrow))
+            else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
             {
                 this.Rotate(3);
                 this.ShiftAll();
                 this.Rotate(1);
                 this.UpdatePosition();
+                hasShiftTried = true;
             }
 
             // 키 입력을 했더라도 빈 공간이 있는 상태에서 고의로 옮겨진 타일이 없도록 움직이려고 했다면 타일을 만들지 않습니다.
-            if (0 < this.shiftedTiles || !this.TryGetEmptySpace(out _, out _))
+            if (!hasShiftTried || (TryGetEmptySpace(out _, out _) && this.shiftedTiles == 0))
             {
-                this.Spawn();
+                return;
             }
+            this.Spawn();
         }
 
         private void UpdatePosition()
@@ -100,6 +107,7 @@ namespace SwipeMerge
         private void ShiftAll()
         {
             var result = new Tile[CellPerLine * CellPerLine];
+            var mergedTiles = new HashSet<int>();
             
             for (var y = 0; y < CellPerLine; y++)
             {
@@ -109,50 +117,34 @@ namespace SwipeMerge
                     if (!this.tiles[ToIndex(x, y)]) continue;
                     var tile = this.tiles[ToIndex(x, y)];
 
-                    if (x != wallX + 1)
+                    // 타일을 밀었을 때 같은 숫자와 부딪힌다면 합칩니다. (합쳐질 때 이번에 옮긴 타일은 사라지니 배열에 반영하지 않고 넘어갑니다) 
+                    if (-1 < wallX)
+                    {
+                        var mergeTarget = result[ToIndex(wallX, y)];
+                        if (mergeTarget != null
+                            &&!mergedTiles.Contains(mergeTarget.GetInstanceID())
+                            && mergeTarget.Value == tile.Value)
+                        {
+                            mergeTarget.SetValue(tile.Value * 2);
+                            Destroy(tile.gameObject);
+                            mergedTiles.Add(mergeTarget.GetInstanceID());
+                            this.shiftedTiles++;
+                            continue;
+                        }
+                    }
+
+                    // 합쳐지지 않았다면 배열에 타일을 반영합니다.
+                    result[ToIndex(++wallX, y)] = tile;
+
+                    // 이전 좌표와 현재 좌표가 다르면 이동한 타일로 카운트합니다.
+                    if (x != wallX)
                     {
                         this.shiftedTiles++;
                     }
-
-                    // 타일을 밀었을 때 같은 숫자와 부딪힌다면 합칩니다. (합쳐질 때 이번에 옮긴 타일은 사라지니 배열에 반영하지 않습니다) 
-                    if (TryMergeTiles(wallX, y, tile))
-                    {
-                        continue;
-                    }
-                    
-                    // 합쳐지지 않았다면 배열에 타일을 반영합니다.
-                    result[ToIndex(++wallX, y)] = tile;
                 }
             }
 
             this.tiles = result;
-            
-            // 함수 내부 기능은 여기서 끝이고, 이후로는 로컬 함수이므로 구분을 위해 return을 작성합니다.
-            return;
-
-            // for문 내에 쓰기엔 들여쓰기가 너무 깊어져서 로컬 함수로 작성합니다.
-            bool TryMergeTiles(int mergeXFrom, int y, Tile mergeMaterial)
-            {
-                var mergeTargetX = mergeXFrom;
-                var hasMerged = false;
-                
-                while (-1 < mergeTargetX)
-                {
-                    var mergeTarget = result[ToIndex(mergeTargetX, y)];
-                    if (mergeTarget == null || mergeTarget.Value != mergeMaterial.Value)
-                    {
-                        break;
-                    }
-
-                    mergeTarget.SetValue(mergeMaterial.Value * 2);
-                    Destroy(mergeMaterial.gameObject);
-                    hasMerged = true;
-                    mergeTargetX--;
-                    mergeMaterial = mergeTarget;
-                }
-
-                return hasMerged;
-            }
         }
 
         // 빈 곳에 타일을 새로 만듭니다.
