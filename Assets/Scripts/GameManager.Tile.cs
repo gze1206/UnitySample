@@ -24,42 +24,42 @@ public partial class GameManager : MonoBehaviour
     {
         if (!this.isPlaying) return;
 
-        var hasShiftTried = false;
-        this.shiftedTiles = 0;
+        var inputDir = this.GetInputDirection();
+        if (inputDir == InputDirection.None) return;
         
-        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+        this.shiftedTiles = 0;
+
+        switch (inputDir)
         {
-            this.ShiftAll();
-            this.UpdatePosition();
-            hasShiftTried = true;
-        }
-        else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
-        {
-            this.Rotate(2);
-            this.ShiftAll();
-            this.Rotate(2);
-            this.UpdatePosition();
-            hasShiftTried = true;
-        }
-        else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
-        {
-            this.Rotate(1);
-            this.ShiftAll();
-            this.Rotate(3);
-            this.UpdatePosition();
-            hasShiftTried = true;
-        }
-        else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
-        {
-            this.Rotate(3);
-            this.ShiftAll();
-            this.Rotate(1);
-            this.UpdatePosition();
-            hasShiftTried = true;
+            case InputDirection.Left:
+                this.ShiftAll();
+                this.UpdatePosition();
+                break;
+            
+            case InputDirection.Right:
+                this.Rotate(2);
+                this.ShiftAll();
+                this.Rotate(2);
+                this.UpdatePosition();
+                break;
+            
+            case InputDirection.Up:
+                this.Rotate(1);
+                this.ShiftAll();
+                this.Rotate(3);
+                this.UpdatePosition();
+                break;
+            
+            case InputDirection.Down:
+                this.Rotate(3);
+                this.ShiftAll();
+                this.Rotate(1);
+                this.UpdatePosition();
+                break;
         }
 
         // 키 입력을 했더라도 빈 공간이 있는 상태에서 고의로 옮겨진 타일이 없도록 움직이려고 했다면 타일을 만들지 않습니다.
-        if (!hasShiftTried || (this.TryGetEmptySpace(out _, out _) && this.shiftedTiles == 0))
+        if (this.TryGetEmptySpace(out _, out _) && this.shiftedTiles == 0)
         {
             return;
         }
